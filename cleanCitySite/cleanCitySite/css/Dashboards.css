@@ -1,0 +1,69 @@
+/* styles.css */
+@import url(https://fonts.googleapis.com/css?family=Roboto);
+body {
+  background-color: #fff;
+  font-family: Arial, Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  direction: rtl;
+  justify-content: center;
+  align-items: center;
+}
+
+header {
+  background-color: #02c39a;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+
+  direction: rtl;
+}
+h3 {
+  text-decoration: underline;
+}
+main {
+  padding: 20px;
+}
+footer {
+  background-color: #333;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.box {
+  max-width: 100%;
+  direction: rtl;
+  display: flex;
+}
+
+.graphsContainer {
+  width: 100%;
+  margin: 0 auto;
+  justify-content: space-evenly;
+}
+
+.row {
+  display: flex;
+  width: 100%;
+  height: 50%;
+}
+.graphItem {
+  flex: 1;
+  margin: 50px;
+}
+
+.graph {
+  max-width: 100%;
+  max-height: 100%;
+
+}
+.Logo {
+  max-width: 100px;
+  margin-left: 45vw;
+}

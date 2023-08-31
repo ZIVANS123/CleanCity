@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/ReportExceedsTreatmentTime.css" />
+
+    <title>דו"חות CleanCity</title>
+  </head>
+  <body>
+    <header>
+      <img class="Logo" src="./assets/Logo.png" alt="CleanCity Logo" />
+      <h1>דו"ח אירועים שזמן טיפול חריג לפי סוג</h1>
+    </header>
+
+    <div class="center-container">
+      <h3>תחום:</h3>
+      <select id="pickList">
+        <option value="פינוי פחים">פינוי פחים</option>
+        <option value="הדברה">הדברה</option>
+        <option value="גיזום">גיזום</option>
+      </select>
+    </div>
+    <div class="Events" id="eventDataContainer"></div>
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+        updateDoc,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"; // Add the correct import for Firestore
+
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDtlThbtNH6aZWi7CN0kIzOFoPv9NRRxH8",
+        authDomain: "cleancity1-97b0b.firebaseapp.com",
+        projectId: "cleancity1-97b0b",
+        storageBucket: "cleancity1-97b0b.appspot.com",
+        messagingSenderId: "109023577613",
+        appId: "1:109023577613:web:8a6a797d713ddbc7ebb744",
+        measurementId: "G-5HB38T8HQT",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore();
+      const colRef = collection(db, "events");
+      const pickList = document.getElementById("pickList");
+      const currentDate = new Date(); //Today
+      const CurrentFormattedDate = formatDate(currentDate); // to compare with DateOfDecision
+      console.log(CurrentFormattedDate);
+
+      console.log(`default value of picker: ${pickList.value}`);
+      let qEvents = query(
+        colRef,
+        where("status", "==", "accepted"),
+        where("eventType", "==", pickList.value)
+      );
+
+      function formatDate(date) {
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = String(date.getFullYear());
+
+        return `${day}/${month}/${year}`;
+      }
+
+      function parseDate(dateStr) {
+        const [day, month, year] = dateStr.split("/").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function calculateDaysDifference(dateStr1, dateStr2) {
+        //return T/F >=5 days
+        const date1 = parseDate(dateStr1);
+        const date2 = parseDate(dateStr2);
+
+        const differenceInTime = date2.getTime() - date1.getTime();
+        const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+        return differenceInDays;
+      }
+
+      const test = await fetchDataAndSaveToArrayExceeded(qEvents);
+      console.log(test);
+      pickList.addEventListener("change", handlePickListChange);
+
+      function handlePickListChange() {
+        const selectedValue = pickList.value;
+        qEvents = query(
+          colRef,
+          where("status", "==", "accepted"),
+          where("eventType", "==", pickList.value)
+        );
+        console.log(selectedValue);
+        renderEventData();
+      }
+
+      async function fetchDataAndSaveToArrayExceeded(q) {
+        const querySnapshot = await getDocs(q);
+        const dataArray = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log(
+            calculateDaysDifference(data.DateOfDecision, CurrentFormattedDate)
+          );
+          if (
+            5 <=
+            calculateDaysDifference(data.DateOfDecision, CurrentFormattedDate)
+          )
+            dataArray.push(data);
+        });
+        return dataArray; // The array containing the data from the query
+      }
+
+      async function renderEventData() {
+        try {
+          const eventDataArray = await fetchDataAndSaveToArrayExceeded(qEvents);
+          const eventDataContainer =
+            document.getElementById("eventDataContainer");
+
+          // Generate the HTML content for the events and update the container's innerHTML
+          if (eventDataArray.length == 0) {
+            eventDataContainer.innerHTML = `<h1>אין נתונים במערכת<h1>`;
+          } else {
+            eventDataContainer.innerHTML = `
+                      <table id ="table">
+                        <thead>
+                          <tr>
+                            <th>סוג אירוע</th>
+                            <th>פרטי האירוע</th>
+                            <th>תאריך דיווח</th>
+                            <th>תאריך אישור דיווח</th>
+                            <th> מספר ימי חריגה</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${eventDataArray
+                            .map(
+                              (event) => `
+                                <tr>
+                                  <td>${event.eventType}</td>
+                                  <td>${event.eventDetails}</td>
+                                  <td>${event.currentDate}</td>
+                                  <td>${event.DateOfDecision}</td>
+                                  <td>${
+                                    calculateDaysDifference(
+                                      event.DateOfDecision,
+                                      CurrentFormattedDate
+                                    ) - 5
+                                  }</td>
+                                </tr>
+                              `
+                            )
+                            .join("")}
+                        </tbody>
+                      </table>
+                      <h3>מספר אירועים:${eventDataArray.length}<h3>
+                    `;
+          }
+        } catch (error) {
+          console.error("Error fetching and rendering event data:", error);
+        }
+      }
+
+      const daysPassedSinceEvent = (startDate) => {
+        // Convert the date string to a valid date format (yyyy-mm-dd)
+        const [day, month, year] = startDate.split("/");
+        const formattedStartDate = `${year}-${month}-${day}`;
+
+        const start = new Date(formattedStartDate);
+        const end = new Date(); // Current date
+
+        const difference = end - start;
+        const days = difference / (1000 * 60 * 60 * 24);
+
+        return Math.round(days);
+      };
+
+      renderEventData();
+      const logoImage = document.querySelector(".Logo");
+
+      logoImage.addEventListener("click", function () {
+        location.replace("Menu.html");
+      });
+    </script>
+  </body>
+</html>

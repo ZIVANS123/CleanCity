@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/Dashboards.css" />
+    <script src="javaScript/Dashboards.js"></script>
+    <title>דשבורדים CleanCity</title>
+  </head>
+  <body>
+    <header>
+      <img class="Logo" src="./assets/Logo.png" alt="CleanCity Logo" />
+      <h1>דשבורדים</h1>
+    </header>
+
+    <div class="box">
+      <div class="graphsContainer">
+        <div class="row">
+          <div class="graphItem">
+            <h3>פילוח דיווח לפי סוג שנתי</h3>
+            <canvas class="graph" id="myFirstChart"></canvas>
+          </div>
+          <div class="graphItem">
+            <h3>אירועים שטופלו בזמן / לא טופלו בזמן שנתי לפי סוג אירוע</h3>
+            <canvas class="graph" id="mySecondChart"></canvas>
+          </div>
+        </div>
+        <div class="row">
+          <div class="graphItem">
+            <h3>כמות אירועים לפי שנים לפי סוגי אירועים</h3>
+            <canvas class="graph" id="myThirdChart"></canvas>
+          </div>
+          <div class="graphItem">
+            <h3>מספר דיווחים לפי סוג דיווח לפי חודש</h3>
+            <canvas class="graph" id="myFourthChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ChartJs ------------------------------------------->
+    <script src="
+    https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js
+ 
+    "></script>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"; // Add the correct import for Firestore
+
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDtlThbtNH6aZWi7CN0kIzOFoPv9NRRxH8",
+        authDomain: "cleancity1-97b0b.firebaseapp.com",
+        projectId: "cleancity1-97b0b",
+        storageBucket: "cleancity1-97b0b.appspot.com",
+        messagingSenderId: "109023577613",
+        appId: "1:109023577613:web:8a6a797d713ddbc7ebb744",
+        measurementId: "G-5HB38T8HQT",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore();
+      const colRef = collection(db, "events");
+      const currentDate = new Date(); //Today
+      console.log(`currentDate: ${currentDate.getFullYear()}`);
+
+      const qTrash = query(colRef, where("eventType", "==", "פינוי פחים"));
+      const qHadbara = query(colRef, where("eventType", "==", "הדברה"));
+      const qGizum = query(colRef, where("eventType", "==", "גיזום"));
+
+      async function fetchDataAndSaveToArray(q) {
+        const querySnapshot = await getDocs(q);
+        const dataArray = [];
+
+        querySnapshot.forEach((doc) => {
+          // Assuming each document contains a "data" field, change it to the actual field name
+          const data = doc.data();
+          if (
+            extractYearFromDateString(data.DateOfDecision) ==
+            currentDate.getFullYear()
+          )
+            dataArray.push(data);
+        });
+        return dataArray; // The array containing the data from the query
+      }
+
+      const numberOfTrash = await fetchDataAndSaveToArray(qTrash);
+      const numberOfHadbara = await fetchDataAndSaveToArray(qHadbara);
+      const numberOfGizum = await fetchDataAndSaveToArray(qGizum);
+
+      // ----------------myFirstChart---Work need to add year condition-------------------------------------->
+      const ctx = document.getElementById("myFirstChart");
+
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["פינוי פחים", "גיזום", "הדברה"],
+          datasets: [
+            {
+              label: "מספר",
+              data: [
+                numberOfTrash.length,
+                numberOfGizum.length,
+                numberOfHadbara.length,
+              ], // retrive from FB
+              backgroundColor: [
+                `rgba(240,243,189)`,
+                `rgba(0, 168, 150)`,
+                `rgba(2, 195, 154)`,
+              ],
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      // ----------------mySecondChart----------------------------------------->
+      const ctx1 = document.getElementById("mySecondChart");
+
+      async function fetchDataAndSaveToArrayTreatedByMonth(q) {
+        //    עדיין עובד אבל רצוי לתקן לא לפי חודשים
+        const querySnapshot = await getDocs(q);
+        const countEventsBymouthTreatedinTime = [
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        const countEventsBymouthTreatedNotinTime = [
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        for (let i = 0; i < querySnapshot.size; i++) {
+          const doc = querySnapshot.docs[i];
+          const data = doc.data();
+          console.log(data.DateOfDecision);
+          console.log(data.DateOfTreatment);
+          if (
+            // if the diffrence equal or greater than 5 days and the event is from the currrent year
+            calculateDaysDifference(
+              data.DateOfDecision,
+              data.DateOfTreatment
+            ) &&
+            extractYearFromDateString(data.DateOfDecision) ==
+              currentDate.getFullYear()
+          ) {
+            countEventsBymouthTreatedNotinTime[
+              extractMonthFromDateString(data.DateOfDecision) - 1
+            ]++;
+            console.log(`Not In Time`);
+          } else if (
+            // if the event is from the current year
+            extractYearFromDateString(data.DateOfDecision) ==
+            currentDate.getFullYear()
+          ) {
+            countEventsBymouthTreatedinTime[
+              extractMonthFromDateString(data.DateOfDecision) - 1
+            ]++;
+            console.log(
+              `In Time`,
+              countEventsBymouthTreatedinTime[
+                extractMonthFromDateString(data.DateOfDecision) - 1
+              ]
+            );
+          }
+        }
+        return [
+          countEventsBymouthTreatedinTime,
+          countEventsBymouthTreatedNotinTime,
+        ];
+      }
+
+      function extractMonthFromDateString(dateString) {
+        //working
+        const [day, month, year] = dateString
+          .split("/")
+          .map((item) => parseInt(item, 10));
+        return month;
+      }
+
+      function extractYearFromDateString(dateString) {
+        //working
+        const [day, month, year] = dateString
+          .split("/")
+          .map((item) => parseInt(item, 10));
+        return year;
+      }
+
+      function sumArrayValues(arr) {
+        if (!Array.isArray(arr)) {
+          throw new Error("Input must be an array");
+        }
+        const sum = arr.reduce(
+          (total, currentValue) => total + currentValue,
+          0
+        );
+
+        return sum;
+      }
+
+      function parseDate(dateStr) {
+        const [day, month, year] = dateStr.split("/").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function calculateDaysDifference(dateStr1, dateStr2) {
+        //return T/F >=5 days
+        const date1 = parseDate(dateStr1);
+        const date2 = parseDate(dateStr2);
+
+        const differenceInTime = date2.getTime() - date1.getTime();
+        const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+        return differenceInDays >= 5;
+      }
+
+      const qTrashTreated = query(
+        colRef,
+        where("eventType", "==", "פינוי פחים"),
+        where(`status`, `==`, "treated")
+      );
+
+      const qHadbaraTreated = query(
+        colRef,
+        where("eventType", "==", "הדברה"),
+        where(`status`, `==`, "treated")
+      );
+
+      const qGizumTreated = query(
+        colRef,
+        where("eventType", "==", "גיזום"),
+        where(`status`, `==`, "treated")
+      );
+
+      const trashTreated = await fetchDataAndSaveToArrayTreatedByMonth(
+        qTrashTreated
+      );
+
+      const trashInTime = trashTreated[0]; // in time
+      const trashNotInTime = trashTreated[1]; //not in time
+
+      const hadbaraTreated = await fetchDataAndSaveToArrayTreatedByMonth(
+        qHadbaraTreated
+      );
+
+      const hadbaraInTime = hadbaraTreated[0]; // in time
+      const hadbaraNotInTime = hadbaraTreated[1]; //not in time
+
+      const gizumTreated = await fetchDataAndSaveToArrayTreatedByMonth(
+        qGizumTreated
+      );
+      const gizumInTime = gizumTreated[0]; // in time
+      const gizumNotInTime = gizumTreated[1]; //not in time
+      new Chart(ctx1, {
+        type: "bar",
+        data: {
+          labels: [
+            "פינוי פחים בזמן",
+            "פינוי פחים באיחור",
+            "הדברה בזמן",
+            "  הדברה באיחור",
+            "גיזום בזמן",
+            "גיזום באיחור",
+          ],
+          datasets: [
+            {
+              label: "בזמן",
+
+              data: [
+                sumArrayValues(trashInTime),
+                sumArrayValues(trashNotInTime),
+                sumArrayValues(hadbaraInTime),
+                sumArrayValues(hadbaraNotInTime),
+                sumArrayValues(gizumInTime),
+                sumArrayValues(gizumNotInTime),
+              ], // retrive from FB
+              backgroundColor: [
+                `rgba(240,243,189)`,
+                `rgba(2, 195, 154)`,
+                `rgba(240,243,189)`,
+                `rgba(240,243,189)`,
+                `rgba(2, 195, 154)`,
+                `rgba(0, 168, 150)`,
+              ],
+              color: [`rgba(255,255,189)`],
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      //----------------myThirdChart------------------------------->
+      const ctx2 = document.getElementById("myThirdChart");
+      async function fetchDataAndSaveToArrayByYear(q, givenYear) {
+        const querySnapshot = await getDocs(q);
+        let counter = 0;
+        for (let i = 0; i < querySnapshot.size; i++) {
+          const doc = querySnapshot.docs[i];
+          const data = doc.data();
+          if (extractYearFromDateString(data.DateOfDecision) == givenYear)
+            counter++;
+        }
+        return counter;
+      }
+      //for TrashEvents
+      const trashThreeYearsBack = await fetchDataAndSaveToArrayByYear(
+        qTrash,
+        currentDate.getFullYear() - 3
+      );
+      const trashTwoYearsBack = await fetchDataAndSaveToArrayByYear(
+        qTrash,
+        currentDate.getFullYear() - 2
+      );
+      const trashLastYear = await fetchDataAndSaveToArrayByYear(
+        qTrash,
+        currentDate.getFullYear() - 1
+      );
+      const trashCurrentYear = await fetchDataAndSaveToArrayByYear(
+        qTrash,
+        currentDate.getFullYear()
+      );
+
+      //for HadbaraEvents
+      const hadbaraThreeYearsBack = await fetchDataAndSaveToArrayByYear(
+        qHadbara,
+        currentDate.getFullYear() - 3
+      );
+      const hadbaraTwoYearsBack = await fetchDataAndSaveToArrayByYear(
+        qHadbara,
+        currentDate.getFullYear() - 2
+      );
+      const hadbaraLastYear = await fetchDataAndSaveToArrayByYear(
+        qHadbara,
+        currentDate.getFullYear() - 1
+      );
+      const hadbaraCurrentYear = await fetchDataAndSaveToArrayByYear(
+        qHadbara,
+        currentDate.getFullYear()
+      );
+
+      //for Gizum Events
+      const gizumThreeYearsBack = await fetchDataAndSaveToArrayByYear(
+        qGizum,
+        currentDate.getFullYear() - 3
+      );
+      const gizumTwoYearsBack = await fetchDataAndSaveToArrayByYear(
+        qGizum,
+        currentDate.getFullYear() - 2
+      );
+      const gizumLastYear = await fetchDataAndSaveToArrayByYear(
+        qGizum,
+        currentDate.getFullYear() - 1
+      );
+      const gizumCurrentYear = await fetchDataAndSaveToArrayByYear(
+        qGizum,
+        currentDate.getFullYear()
+      );
+
+      new Chart(ctx2, {
+        type: "line",
+        data: {
+          labels: [
+            currentDate.getFullYear() - 3,
+            currentDate.getFullYear() - 2,
+            currentDate.getFullYear() - 1,
+            currentDate.getFullYear(),
+          ],
+          datasets: [
+            {
+              label: "פחים",
+              data: [
+                trashThreeYearsBack,
+                trashTwoYearsBack,
+                trashLastYear,
+                trashCurrentYear,
+              ], // retrive from FB
+              backgroundColor: [`rgba(240,243,189)`],
+              borderColor: [`rgba(240,243,189)`],
+              borderWidth: 4,
+            },
+            {
+              label: "הדברה",
+              data: [
+                hadbaraThreeYearsBack,
+                hadbaraTwoYearsBack,
+                hadbaraLastYear,
+                hadbaraCurrentYear,
+              ], // retrive from FB
+              backgroundColor: [`rgba(2, 195, 154)`],
+              borderColor: [`rgba(2, 195, 154)`],
+              borderWidth: 4,
+            },
+            {
+              label: "גיזום",
+              data: [
+                gizumThreeYearsBack,
+                gizumTwoYearsBack,
+                gizumLastYear,
+                gizumCurrentYear,
+              ], // retrive from FB
+              backgroundColor: [`rgba(0, 168, 150)`],
+              borderColor: [`rgba(0, 168, 150)`],
+              borderWidth: 4,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      //----------------myFourthChart----- -------------------------->
+      const ctx3 = document.getElementById("myFourthChart");
+
+      async function fetchDataAndSaveToArrayByMonth(q) {
+        const querySnapshot = await getDocs(q);
+        const countEventsBymonth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        for (let i = 0; i < querySnapshot.size; i++) {
+          const doc = querySnapshot.docs[i];
+          const data = doc.data();
+          if (
+            extractYearFromDateString(data.DateOfDecision) ==
+            currentDate.getFullYear()
+          ) {
+            countEventsBymonth[
+              extractMonthFromDateString(data.DateOfDecision) - 1
+            ]++;
+          }
+        }
+        return countEventsBymonth;
+      }
+
+      const trashMonthNumbers = await fetchDataAndSaveToArrayByMonth(qTrash);
+      const hadbaraMonthNumbers = await fetchDataAndSaveToArrayByMonth(
+        qHadbara
+      );
+      const gizumMonthNumbers = await fetchDataAndSaveToArrayByMonth(qGizum);
+
+      new Chart(ctx3, {
+        type: "bar",
+        data: {
+          labels: [
+            `ינואר פחים`,
+            `ינואר הדברה`,
+            `ינואר גיזום`,
+            `פברואר פחים`,
+            `פברואר הדברה`,
+            `פברואר גיזום`,
+            `מרץ פחים`,
+            `מרץ הדברה`,
+            `מרץ גיזום`,
+            `אפריל פחים`,
+            `אפריל הדברה`,
+            `אפריל גיזום`,
+            `מאי פחים`,
+            `מאי הדברה`,
+            `מאי גיזום`,
+            `יוני פחים`,
+            `יוני הדברה`,
+            `יוני גיזום`,
+            `יולי פחים`,
+            `יולי הדברה`,
+            `יולי גיזום`,
+            `אוגוסט פחים`,
+            `אוגוסט הדברה`,
+            `אוגוסט גיזום`,
+            `ספטמבר פחים`,
+            `ספטמבר הדברה`,
+            `ספטמבר גיזום`,
+            `אוקטובר פחים`,
+            `אוקטובר הדברה`,
+            `אוקטובר גיזום`,
+            `נובמבר פחים`,
+            `נובמבר הדברה`,
+            `נובמבר גיזום`,
+            `דצמבר פחים`,
+            `דצמבר הדברה`,
+            `דצמבר גיזום`,
+          ],
+          datasets: [
+            {
+              label: "מספר",
+              data: [
+                trashMonthNumbers[0],
+                hadbaraMonthNumbers[0],
+                gizumMonthNumbers[0],
+                trashMonthNumbers[1],
+                hadbaraMonthNumbers[1],
+                gizumMonthNumbers[1],
+                trashMonthNumbers[2],
+                hadbaraMonthNumbers[2],
+                gizumMonthNumbers[2],
+                trashMonthNumbers[3],
+                hadbaraMonthNumbers[3],
+                gizumMonthNumbers[3],
+                trashMonthNumbers[4],
+                hadbaraMonthNumbers[4],
+                gizumMonthNumbers[4],
+                trashMonthNumbers[5],
+                hadbaraMonthNumbers[5],
+                gizumMonthNumbers[5],
+                trashMonthNumbers[6],
+                hadbaraMonthNumbers[6],
+                gizumMonthNumbers[6],
+                trashMonthNumbers[7],
+                hadbaraMonthNumbers[7],
+                gizumMonthNumbers[7],
+                trashMonthNumbers[8],
+                hadbaraMonthNumbers[8],
+                gizumMonthNumbers[8],
+                trashMonthNumbers[9],
+                hadbaraMonthNumbers[9],
+                gizumMonthNumbers[9],
+                trashMonthNumbers[10],
+                hadbaraMonthNumbers[10],
+                gizumMonthNumbers[10],
+                trashMonthNumbers[11],
+                hadbaraMonthNumbers[11],
+                gizumMonthNumbers[11],
+              ], // retrive from FB
+              backgroundColor: [
+                `rgba(240,243,189)`,
+                `rgba(2, 195, 154)`,
+                `rgba(0, 168, 150)`,
+              ],
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+      //---------------------------------------------------------->
+      const logoImage = document.querySelector(".Logo");
+      logoImage.addEventListener("click", function () {
+        location.replace("Menu.html");
+      });
+    </script>
+  </body>
+</html>

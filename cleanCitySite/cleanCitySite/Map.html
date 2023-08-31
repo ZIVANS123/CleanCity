@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/Map.css" />
+    <title>מפת העיר CleanCity</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
+  </head>
+  <body>
+    <header>
+      <img src="./assets/Logo.png" alt="Login Image" class="Logo" />
+      <h1>מפת העיר</h1>
+      <h3>סטטוס:</h3>
+      <select id="status-selector">
+        <option value="new">טרם אושר</option>
+        <option value="accepted">אושרו וטרם טופלו</option>
+        <option value="rejected">נדחו</option>
+        <option value="treated">טופלו</option>
+      </select>
+    </header>
+
+    <div id="map" style="height: 100vw"></div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+        updateDoc,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"; // Add the correct import for Firestore
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDtlThbtNH6aZWi7CN0kIzOFoPv9NRRxH8",
+        authDomain: "cleancity1-97b0b.firebaseapp.com",
+        projectId: "cleancity1-97b0b",
+        storageBucket: "cleancity1-97b0b.appspot.com",
+        messagingSenderId: "109023577613",
+        appId: "1:109023577613:web:8a6a797d713ddbc7ebb744",
+        measurementId: "G-5HB38T8HQT",
+      };
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore();
+      let colRef = collection(db, "events");
+      let selectedStatus = document.getElementById("status-selector");
+      let qEvents = query(colRef, where("status", "==", "new"));
+
+      var StyleOfMap = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 18,
+          minZoom: 14,
+        }
+      );
+
+      // Wait for the DOM to be fully loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        // Create a map centered at a specific location
+        const mymap = L.map("map").setView([32.642581, 35.12731], 14);
+        // var northEast = L.latLng(32.781272, 35.195793);
+        // var southWest = L.latLng(32.600526, 35.034129);
+        // var bounds = L.latLngBounds(southWest, northEast);
+        // mymap.setMaxBounds(bounds);
+        const header = document.getElementById("numberOfEvent");
+        const borderscoordinates = [
+          [32.7234, 35.0961],
+          [32.7258, 35.0962],
+          [32.7258, 35.0967],
+          [32.7253, 35.0976],
+          [32.7254, 35.0981],
+          [32.7247, 35.0993],
+          [32.7241, 35.1014],
+          [32.7239, 35.1015],
+          [32.7222, 35.106],
+          [32.7206, 35.1069],
+          [32.7203, 35.1075],
+          [32.7201, 35.1076],
+          [32.7189, 35.107],
+          [32.7179, 35.107],
+          [32.7176, 35.1067],
+          [32.7167, 35.1069],
+          [32.7163, 35.1087],
+          [32.7159, 35.109],
+          [32.715, 35.109],
+          [32.7144, 35.1088],
+          [32.7142, 35.1085],
+          [32.7141, 35.1082],
+          [32.7143, 35.1074],
+          [32.7141, 35.1063],
+          [32.713, 35.1054],
+          [32.7124, 35.1053],
+          [32.7119, 35.1059],
+          [32.7117, 35.1059],
+          [32.7113, 35.1066],
+          [32.7111, 35.1077],
+          [32.7116, 35.1125],
+          [32.7119, 35.1125],
+          [32.7122, 35.1129],
+          [32.7127, 35.1129],
+          [32.7135, 35.1133],
+          [32.7142, 35.1158],
+          [32.7145, 35.1163],
+          [32.7157, 35.1146],
+          [32.7163, 35.1141],
+          [32.717, 35.1139],
+          [32.7177, 35.1139],
+          [32.7193, 35.1144],
+          [32.7213, 35.1154],
+          [32.7217, 35.1157],
+          [32.7218, 35.1162],
+          [32.7211, 35.1174],
+          [32.7202, 35.118],
+          [32.7205, 35.1187],
+          [32.721, 35.1192],
+          [32.7238, 35.1192],
+          [32.7251, 35.1201],
+          [32.7255, 35.1206],
+          [32.7261, 35.1219],
+          [32.7268, 35.1227],
+          [32.7271, 35.1243],
+          [32.7267, 35.1283],
+          [32.7274, 35.1301],
+          [32.7274, 35.1312],
+          [32.727, 35.1328],
+          [32.7272, 35.1333],
+          [32.7277, 35.1366],
+          [32.7283, 35.1379],
+          [32.7294, 35.1393],
+          [32.7333, 35.1392],
+          [32.7335, 35.1394],
+          [32.7336, 35.1396],
+          [32.7335, 35.1412],
+          [32.733, 35.1427],
+          [32.7342, 35.1441],
+          [32.7345, 35.1441],
+          [32.7349, 35.1424],
+          [32.7353, 35.1423],
+          [32.7368, 35.1432],
+          [32.7369, 35.1436],
+          [32.7373, 35.144],
+          [32.7379, 35.1451],
+          [32.7381, 35.1448],
+          [32.7385, 35.1448],
+          [32.74, 35.1463],
+          [32.7408, 35.1466],
+          [32.7405, 35.149],
+          [32.7389, 35.1504],
+          [32.7386, 35.1504],
+          [32.7384, 35.1502],
+          [32.7376, 35.1491],
+          [32.7374, 35.1498],
+          [32.7372, 35.15],
+          [32.7353, 35.1502],
+          [32.7333, 35.1478],
+          [32.7322, 35.1484],
+          [32.7323, 35.149],
+          [32.7322, 35.1495],
+          [32.7327, 35.1505],
+          [32.7325, 35.1509],
+          [32.7323, 35.151],
+          [32.729, 35.1509],
+          [32.7285, 35.1503],
+          [32.7284, 35.149],
+          [32.728, 35.1488],
+          [32.7278, 35.1477],
+          [32.7274, 35.1471],
+          [32.7274, 35.1468],
+          [32.7276, 35.1464],
+          [32.7279, 35.1462],
+          [32.728, 35.1458],
+          [32.7267, 35.1451],
+          [32.7265, 35.1448],
+          [32.7239, 35.1444],
+          [32.7238, 35.1429],
+          [32.7234, 35.1418],
+          [32.7225, 35.1409],
+          [32.7221, 35.1401],
+          [32.7217, 35.1384],
+          [32.7209, 35.1374],
+          [32.7209, 35.1365],
+          [32.7207, 35.1361],
+          [32.7201, 35.1371],
+          [32.7196, 35.1371],
+          [32.7185, 35.135],
+          [32.7185, 35.1347],
+          [32.719, 35.134],
+          [32.718, 35.1321],
+          [32.7176, 35.1322],
+          [32.716, 35.1321],
+          [32.715, 35.1318],
+          [32.7136, 35.132],
+          [32.7129, 35.1316],
+          [32.7124, 35.1316],
+          [32.712, 35.1319],
+          [32.711, 35.1319],
+          [32.7107, 35.1324],
+          [32.7097, 35.1331],
+          [32.7081, 35.1338],
+          [32.7079, 35.1361],
+          [32.7077, 35.1363],
+          [32.7049, 35.1359],
+          [32.7038, 35.1347],
+          [32.7031, 35.1344],
+          [32.7025, 35.1345],
+          [32.7011, 35.1333],
+          [32.7011, 35.133],
+          [32.703, 35.1307],
+          [32.7028, 35.128],
+          [32.7023, 35.1265],
+          [32.7017, 35.1253],
+          [32.701, 35.123],
+          [32.701, 35.1222],
+          [32.7012, 35.1211],
+          [32.7029, 35.1197],
+          [32.7034, 35.1195],
+          [32.7037, 35.1168],
+          [32.7037, 35.1146],
+          [32.7045, 35.1144],
+          [32.7046, 35.1141],
+          [32.7044, 35.1138],
+          [32.7032, 35.1131],
+          [32.7026, 35.1114],
+          [32.7023, 35.111],
+          [32.7019, 35.1112],
+          [32.7015, 35.1124],
+          [32.7005, 35.1132],
+          [32.7003, 35.1132],
+          [32.6977, 35.1121],
+          [32.6967, 35.11],
+          [32.6947, 35.1105],
+          [32.6937, 35.1113],
+          [32.6921, 35.112],
+          [32.6889, 35.1117],
+          [32.6887, 35.1115],
+          [32.6886, 35.1108],
+          [32.6878, 35.1118],
+          [32.6875, 35.1119],
+          [32.6855, 35.1105],
+          [32.6849, 35.1098],
+          [32.6848, 35.1088],
+          [32.6846, 35.1088],
+          [32.6842, 35.1084],
+          [32.6841, 35.1057],
+          [32.6843, 35.1055],
+          [32.6919, 35.1041],
+          [32.6963, 35.1028],
+          [32.6971, 35.1025],
+          [32.6971, 35.1023],
+          [32.6973, 35.1022],
+          [32.6983, 35.1019],
+          [32.7153, 35.0986],
+          [32.7198, 35.097],
+          [32.7214, 35.0966],
+          [32.7234, 35.0961],
+        ];
+
+        StyleOfMap.addTo(mymap);
+
+        // Function to add markers to the map based on Firestore data
+        function addMarkersToMap(querySnapshot) {
+          querySnapshot.forEach((doc) => {
+            const event = doc.data();
+            const { eventType } = event;
+            const { latitude, longitude } = event.currentLocation;
+            console.log(latitude, longitude);
+
+            if (latitude && longitude && eventType) {
+              let customIconUrl;
+              switch (eventType) {
+                case "פינוי פחים":
+                  customIconUrl = "./assets/trash.png";
+                  break;
+                case "הדברה":
+                  customIconUrl = "./assets/pest.png";
+                  break;
+                case "גיזום":
+                  customIconUrl = "./assets/tree.png";
+                  break;
+              }
+              const customIcon = L.icon({
+                iconUrl: customIconUrl,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32],
+              });
+              const description = `
+                        <div dir="rtl">
+                          <strong>תאריך:</strong> ${event.currentDate}<br>
+                          <strong>תיאור:</strong> ${event.eventDetails}<br>
+                          <strong>סטטוס:</strong> ${
+                            event.status === "accepted"
+                              ? "אושר"
+                              : event.status === "rejected"
+                              ? "נדחה"
+                              : event.status === "treated"
+                              ? "טופל"
+                              : "טרם אושר"
+                          }
+                        </div>
+      `;
+
+              // Add a marker for each event
+              L.marker([latitude, longitude], { icon: customIcon })
+                .addTo(mymap)
+                .bindPopup(description);
+            }
+          });
+        }
+        const polygon = L.polygon(borderscoordinates).addTo(mymap);
+        polygon.setStyle({
+          color: `#00A896`,
+          weight: 5, // Border weight in pixels
+          opacity: 1, // Border opacity (0-1)
+          fill: false,
+          dashArray: "5, 10",
+        });
+
+        let selected = selectedStatus.value;
+
+        selectedStatus.addEventListener("change", function () {
+          selected = selectedStatus.value; //working type : strin
+          qEvents = query(colRef, where("status", "==", selected));
+          mymap.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+              mymap.removeLayer(layer);
+            }
+          });
+
+          getDocs(qEvents).then((querySnapshot) => {
+            addMarkersToMap(querySnapshot);
+          });
+        });
+
+        // Fetch Firestore data and add markers when the data is ready for the first time
+        getDocs(qEvents).then((querySnapshot) => {
+          addMarkersToMap(querySnapshot);
+        });
+
+        const logoImage = document.querySelector(".Logo");
+        // Add a click event listener to the image
+        logoImage.addEventListener("click", function () {
+          location.replace("Menu.html");
+        });
+      });
+    </script>
+  </body>
+</html>

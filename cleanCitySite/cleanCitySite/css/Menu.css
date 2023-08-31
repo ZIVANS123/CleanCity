@@ -1,0 +1,87 @@
+/* styles.css */
+body {
+  background-color: #05668d;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+header {
+  background-color: #02c39a;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+
+  direction: rtl;
+}
+h1{
+  color: #fff;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+
+}
+h4 {
+  color: #fff;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+main {
+  padding: 20px;
+}
+footer {
+  background-color: #333;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+.ButtonsContainer {
+  display: flex; /* Use flexbox to create a horizontal layout */
+  justify-content: center;
+}
+
+.button {
+  margin-top: 50px;
+  background-color: #f0f3bd;
+  height: 100px;
+  width: 300px;
+  border-radius: 25px;
+  /* Optional: Add some space between buttons horizontally */
+  margin-right: 10px;
+}
+
+/* Style for the navigation bar */
+nav {
+  background-color: #f0f3bd;
+  direction: rtl; /* Change the background color to your preference */
+}
+
+nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+nav li {
+  padding: 10px 20px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #010101; /* Change the link color to your preference */
+}
+
+nav a:hover {
+  background-color: #02c39a; /* Change the background color on hover to your preference */
+}
+.Logo {
+  max-width: 100px;
+  margin-left: 45vw;
+}

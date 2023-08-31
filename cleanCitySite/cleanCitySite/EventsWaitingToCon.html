@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/EventsWaitingToCon.css" />
+    <title>אישור אירועים CleanCity</title>
+  </head>
+  <body>
+    <header>
+      <img class="Logo" src="./assets/Logo.png" alt="CleanCity Logo" />
+      <h1>ניהול אישור אירועים</h1>
+    </header>
+    <div class="Events" id="eventDataContainer"></div>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+        updateDoc,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js"; // Add the correct import for Firestore
+
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyDtlThbtNH6aZWi7CN0kIzOFoPv9NRRxH8",
+        authDomain: "cleancity1-97b0b.firebaseapp.com",
+        projectId: "cleancity1-97b0b",
+        storageBucket: "cleancity1-97b0b.appspot.com",
+        messagingSenderId: "109023577613",
+        appId: "1:109023577613:web:8a6a797d713ddbc7ebb744",
+        measurementId: "G-5HB38T8HQT",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore();
+      const colRef = collection(db, "events");
+      const qEvents = query(colRef, where("status", "==", "new"));
+
+      async function fetchDataAndSaveToArray(q) {
+        const querySnapshot = await getDocs(q);
+        const dataArray = [];
+        querySnapshot.forEach((doc) => {
+          // Assuming each document contains a "data" field, change it to the actual field name
+          const data = doc.data();
+          dataArray.push(data);
+        });
+        return dataArray; // The array containing the data from the query
+      }
+
+      async function renderEventData() {
+        try {
+          const eventDataArray = await fetchDataAndSaveToArray(qEvents);
+          const eventDataContainer =
+            document.getElementById("eventDataContainer");
+
+          // Generate the HTML content for the events and update the container's innerHTML
+          if (eventDataArray.length == 0) {
+            eventDataContainer.innerHTML = `<h1>אין אירועים לאישור<h1>`;
+          } else {
+            eventDataContainer.innerHTML = `
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>סוג אירוע</th>
+                            <th>פרטי האירוע</th>
+                            <th>משתמש שדיווח</th>
+                            <th>תאריך דיווח</th>
+                            <th>מאשר לא מאשר</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${eventDataArray
+                            .map(
+                              (event) => `
+                                <tr>
+                                  <td>${event.eventType}</td>
+                                  <td>${event.eventDetails}</td>
+                                  <td>${event.user}</td>
+                                  <td>${event.currentDate}</td>
+                                  <td>
+                                    <button class="confirm-button">אישור</button>
+
+                                    <button class="cancel-button">דחייה</button>
+                                  </td>
+                                </tr>
+                              `
+                            )
+                            .join("")}
+                        </tbody>
+                      </table>
+                      <h3>מספר אירועים:${eventDataArray.length}<h3>
+                    `;
+          }
+        } catch (error) {
+          console.error("Error fetching and rendering event data:", error);
+        }
+      }
+      const DateOfDecision = new Date().toLocaleDateString("en-GB");
+      async function attachEventListeners() {
+        try {
+          await renderEventData(); //  First render the table before attaching listeners
+          const cancleButton = document.querySelectorAll(".cancel-button");
+          const confirmButtons = document.querySelectorAll(".confirm-button");
+
+          confirmButtons.forEach((button) => {
+            // accepted buttons
+            button.addEventListener("click", async () => {
+              const row = button.closest("tr");
+              const eventType = row.cells[0].innerText;
+              const eventDetails = row.cells[1].innerText;
+              const user = row.cells[2].innerText;
+              const currentDate = row.cells[3].innerText;
+              console.log(eventType, eventDetails, user, currentDate);
+              const confirmation = window.confirm(
+                "אתה בטוח שאתה רוצה לאשר את האירוע?"
+              );
+              if (confirmation) {
+                try {
+                  const querySnapshot = await getDocs(
+                    query(
+                      colRef,
+                      where("eventType", "==", eventType),
+                      where("eventDetails", "==", eventDetails),
+                      where("user", "==", user),
+                      where("currentDate", "==", currentDate),
+                      where("status", "==", "new")
+                    )
+                  );
+                  console.log(`querySnap ${querySnapshot[0]}`);
+
+                  querySnapshot.forEach((doc) => {
+                    console.log("Document ID:", doc.id);
+
+                    const docRef = doc.ref;
+                    updateDoc(docRef, {
+                      status: "accepted",
+                      DateOfDecision: DateOfDecision,
+                    });
+
+                    console.log("Event status accepted updated.");
+                    renderEventData();
+                    attachEventListeners();
+                  });
+                } catch (error) {
+                  console.error("Error executing query:", error);
+                }
+              }
+            });
+          });
+
+          cancleButton.forEach((button) => {
+            // rejected buttons
+            button.addEventListener("click", async () => {
+              const row = button.closest("tr");
+              const eventType = row.cells[0].innerText;
+              const eventDetails = row.cells[1].innerText;
+              const user = row.cells[2].innerText;
+              const currentDate = row.cells[3].innerText;
+              console.log(eventType, eventDetails, user, currentDate);
+              const confirmation = window.confirm(
+                "אתה בטוח שאתה רוצה לדחות את האירוע?"
+              );
+              if(confirmation){
+              try {
+                const querySnapshot = await getDocs(
+                  query(
+                    colRef,
+                    where("eventType", "==", eventType),
+                    where("eventDetails", "==", eventDetails),
+                    where("user", "==", user),
+                    where("currentDate", "==", currentDate),
+                    where("status", "==", "new")
+                  )
+                );
+
+                querySnapshot.forEach((doc) => {
+                  console.log("Document ID:", doc.id);
+                  const docRef = doc.ref;
+                  updateDoc(docRef, {
+                    status: "rejected",
+                    DateOfDecision: DateOfDecision,
+                  });
+                  console.log("Event status rejected updated.");
+                  renderEventData();
+                  attachEventListeners();
+                });
+              } catch (error) {
+                console.error("Error executing query:", error);
+              }
+            }
+            });
+          });
+        } catch (error) {
+          console.error("Error attaching event listeners:", error);
+        }
+      }
+    
+      document.addEventListener("DOMContentLoaded", () => {
+        attachEventListeners();
+      });
+      const logoImage = document.querySelector(".Logo");
+      logoImage.addEventListener("click", function () {
+        location.replace("Menu.html");
+      });
+    </script>
+  </body>
+</html>

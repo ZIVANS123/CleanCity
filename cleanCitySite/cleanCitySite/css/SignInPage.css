@@ -1,0 +1,83 @@
+/* styles.css */
+body {
+  background-color: #05668d;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+header {
+  background-color: #02c39a;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  margin-bottom: 120px;
+}
+main {
+  padding: 20px;
+}
+footer {
+  background-color: #333;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.login-form {
+  width: 350px;
+  height: 180px;
+  padding: 20px;
+  position: absolute;
+  margin-top: 40px;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  direction: rtl;
+}
+
+.login-form label {
+  font-weight: bold;
+  direction: rtl;
+  text-decoration: underline;
+}
+
+.login-form input[type="text"] {
+  width: 60%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.login-form input[type="password"] {
+  width: 60%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-right: 40px;
+  margin-top: 3px;
+}
+
+.login-form button {
+  width: 50%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  margin-top: 30px;
+  margin-right: 100px;
+  background-color: #f0f3bd;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+.Logo {
+  width: 200px;
+  height: 200px;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-bottom: 120px;
+}

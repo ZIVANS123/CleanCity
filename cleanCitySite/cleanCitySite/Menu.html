@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/Menu.css" />
+    <title>תפריט ראשי CleanCity</title>
+  </head>
+  <body>
+    <header>
+      <img class="Logo" src="./assets/Logo.png" alt="CleanCity Logo" />
+
+      <h1>תפריט ראשי</h1>
+    </header>
+    <nav>
+      <ul>
+        <li><a href="EventsWaitingToCon.html">אישור אירועים </a></li>
+        <li><a href="EventToTreat.html">אישור טיפול באירועים </a></li>
+        <li><a href="Dashboards.html">דשבורדים</a></li>
+        <li><a href="Map.html">מפת העיר</a></li>
+        <li><a href="ReportNotTreated.html">דו"ח טרם טופלו </a></li>
+        <li>
+          <a href="ReportExceedsTreatmentTime.html">דו"ח זמן טיפול חריג </a>
+        </li>
+        <li><a id="signOutLink" href="SignInPage.html">התנתקות מהמערכת</a></li>
+      </ul>
+    </nav>
+    <h4>טלפון תמיכה טכנית 04-6082227</h4>
+  </body>
+  <script>
+    const signOutLink = document.getElementById("signOutLink");
+    signOutLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      const confirmSignOut = window.confirm("בטוחים שאתם רוצים להתנתק?");
+      if (confirmSignOut) {
+        alert("מתנתק מהמערכת...");
+        location.replace("SignInPage.html");
+      }
+    });
+  </script>
+</html>
